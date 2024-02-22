@@ -1,0 +1,51 @@
+{
+  "name": "product-list",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "init": "npm i && npm run husky:prepare && npm run husky:pre-commit && npm run husky:commit-msg && npm run vite:dev",
+    "shell:generate-component": "sh ./src/utils/generate-component.sh",
+    "vite:dev": "vite --open",
+    "vite:build": "tsc && vite build",
+    "vite:preview": "vite preview --open",
+    "eslint:check": "eslint . --ext js,jsx,ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "eslint:fix": "eslint . --fix --ext js,jsx,ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "prettier:check": "prettier . --check . ",
+    "prettier:format": "prettier \"**/*.{html,css,js,cjs,jsx,ts,tsx,json,md}\" --cache --write",
+    "husky:prepare": "husky install",
+    "husky:pre-commit": "npx husky add .husky/pre-commit \"npx lint-staged --concurrent false --relative\"",
+    "husky:commit-msg": "npx husky add .husky/commit-msg \"npx commitlint --edit $1\"",
+    "lint-staged:run": "lint-staged"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^18.2.0",
+    "@commitlint/config-conventional": "^18.1.0",
+    "@types/node": "^20.8.10",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.3",
+    "eslint": "^8.45.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-import-resolver-typescript": "^3.6.1",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.0.2",
+    "prettier": "^3.0.3",
+    "typescript": "^5.0.2",
+    "vite": "^4.5.2",
+    "vite-plugin-checker": "^0.6.2",
+    "vite-tsconfig-paths": "^4.2.1"
+  }
+}

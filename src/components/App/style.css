@@ -1,0 +1,16 @@
+@font-face {
+  font-display: swap;
+  font-family: "Lora-Regular";
+  font-weight: 400;
+  src:
+    url("/src/assets/fonts/Lora-Regular.woff2") format("woff2"),
+    url("/src/assets/fonts/Lora-Regular.woff") format("woff"),
+    url("/src/assets/fonts/Lora-Regular.ttf") format("ttf");
+}
+
+body {
+  width: 100vw;
+  height: 100vh;
+  font-size: 1rem;
+  font-family: "Lora-Regular", serif;
+}
