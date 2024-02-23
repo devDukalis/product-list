@@ -19,12 +19,16 @@
     "lint-staged:run": "lint-staged"
   },
   "dependencies": {
+    "antd": "^5.14.2",
+    "axios": "^1.6.7",
+    "crypto-js": "^4.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^18.2.0",
     "@commitlint/config-conventional": "^18.1.0",
+    "@types/crypto-js": "^4.2.2",
     "@types/node": "^20.8.10",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
