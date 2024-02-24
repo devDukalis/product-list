@@ -7,6 +7,8 @@ import Container from "@/components/Container";
 
 import apiService from "@/services/apiService";
 
+import { generateUniqueKey } from "@/utils/generateUniqueKey";
+
 import { Product } from "@/models";
 
 const pageSizeOptions = [5, 10, 20, 50];
@@ -19,6 +21,7 @@ interface ProductState {
   pageSize: number;
   pageNumber: number;
   isLoading: boolean;
+  errorId: string | null;
 }
 
 const ProductList = () => {
@@ -28,6 +31,7 @@ const ProductList = () => {
     pageSize: defaultPageSize,
     pageNumber: defaultPageNumber,
     isLoading: true,
+    errorId: null,
   });
 
   const handlePageChange = useCallback((currentPageNumber: number, currentPageSize: number) => {
@@ -43,28 +47,40 @@ const ProductList = () => {
   }, []);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchProducts = () => {
       setState((prevState) => ({ ...prevState, isLoading: true }));
-      try {
-        const totalItems = await apiService.getIds();
-        const offset = (state.pageNumber - 1) * state.pageSize;
-        const ids = await apiService.getIds(offset, state.pageSize);
-        const items = await apiService.getItems(ids);
+      const offset = (state.pageNumber - 1) * state.pageSize;
 
-        const uniqueItems = Array.from(new Set(items.map((item) => item.id)))
-          .map((id) => items.find((item) => item.id === id))
-          .filter((item) => item !== undefined) as Product[];
+      apiService
+        .getIds()
+        .then((totalItems) => {
+          return apiService
+            .getIds(offset, state.pageSize)
+            .then((ids) => apiService.getItems(ids))
+            .then((items) => {
+              const uniqueItems = Array.from(new Set(items.map((item) => item.id)))
+                .map((id) => items.find((item) => item.id === id))
+                .filter((item) => item !== undefined) as Product[];
 
-        setState((prevState) => ({
-          ...prevState,
-          products: uniqueItems,
-          total: totalItems.length,
-          isLoading: false,
-        }));
-      } catch (error) {
-        console.error(error);
-        setState((prevState) => ({ ...prevState, isLoading: false }));
-      }
+              setState((prevState) => ({
+                ...prevState,
+                products: uniqueItems,
+                total: totalItems.length,
+                isLoading: false,
+              }));
+            });
+        })
+        .catch(() => {
+          const errorId = generateUniqueKey();
+          setState((prevState) => ({ ...prevState, errorId: errorId }));
+          console.error(`Error ID: ${errorId}`);
+
+          if (errorId) {
+            setTimeout(() => {
+              fetchProducts();
+            }, 1000);
+          }
+        });
     };
 
     fetchProducts();
