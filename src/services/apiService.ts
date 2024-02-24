@@ -31,7 +31,7 @@ class ApiService {
     }
   }
 
-  async getIds(offset: number, limit: number): Promise<string[]> {
+  async getIds(offset?: number, limit?: number): Promise<string[]> {
     return this.makeRequest<string[]>("get_ids", { offset, limit });
   }
 
