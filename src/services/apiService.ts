@@ -2,13 +2,13 @@ import axios, { AxiosResponse } from "axios";
 
 import md5 from "crypto-js/md5";
 
-import { ApiResponse, FilterParams, Product } from "@/models";
+import { ApiResponse, FieldParams, FilterParams, Product } from "@/models";
 
 const BASE_URL = "http://api.valantis.store:40000/";
 const PASSWORD = "Valantis";
 
 class ApiService {
-  private async makeRequest<T>(action: string, params: unknown = {}): Promise<T> {
+  private async makeRequest<T>(action: string, params?: unknown): Promise<T> {
     const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const authToken = md5(`${PASSWORD}_${timestamp}`).toString();
 
@@ -31,20 +31,24 @@ class ApiService {
     }
   }
 
+  // получить id всех товаров
   async getIds(offset?: number, limit?: number): Promise<string[]> {
     return this.makeRequest<string[]>("get_ids", { offset, limit });
   }
 
+  // получить список товаров
   async getItems(ids: string[]): Promise<Product[]> {
     return this.makeRequest<Product[]>("get_items", { ids });
   }
 
-  async getFields(field?: string, offset?: number, limit?: number): Promise<unknown[]> {
-    return this.makeRequest<unknown[]>("get_fields", { field, offset, limit });
+  // получить список полей товаров
+  async getFields(params?: FieldParams): Promise<string[]> {
+    return this.makeRequest<string[]>("get_fields", params);
   }
 
+  // получить список id товаров с фильтрами из getFields
   async filter(params: FilterParams): Promise<string[]> {
-    return this.makeRequest<string[]>("filter", { params });
+    return this.makeRequest<string[]>("filter", params);
   }
 }
 
