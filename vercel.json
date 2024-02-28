@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "https://product-list-2j6q.vercel.app/",
+      "destination": "http://api.valantis.store:40000/"
+    }
+  ]
+}
