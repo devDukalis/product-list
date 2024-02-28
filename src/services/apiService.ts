@@ -1,14 +1,16 @@
 import axios, { AxiosResponse } from "axios";
-
 import md5 from "crypto-js/md5";
+
+import { generateUniqueKey } from "@/utils";
 
 import { ApiResponse, FieldParams, FilterParams, Product } from "@/models";
 
 const BASE_URL = "http://api.valantis.store:40000/";
 const PASSWORD = "Valantis";
+const MAX_RETRIES = 2;
 
 class ApiService {
-  private async makeRequest<T>(action: string, params?: unknown): Promise<T> {
+  private async makeRequest<T>(action: string, params?: unknown, retries = 0): Promise<T> {
     const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const authToken = md5(`${PASSWORD}_${timestamp}`).toString();
 
@@ -27,7 +29,14 @@ class ApiService {
       );
       return response.data.result;
     } catch (error) {
-      throw new Error(`${error}`);
+      const errorId = generateUniqueKey();
+      console.error(errorId);
+
+      if (retries < MAX_RETRIES) {
+        return this.makeRequest(action, params, retries + 1);
+      } else {
+        throw new Error(`${error}`);
+      }
     }
   }
 

@@ -1,19 +1,30 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 
-import { Typography, Pagination, Row, Col, Divider, Skeleton, Select, Button, Space } from "antd";
+import { Pagination, Row, Col, Divider, Skeleton, Empty } from "antd";
 
 import ProductCard from "@/components/ProductCard";
 import Container from "@/components/Container";
+import Filters from "@/components/Filters";
+import Title from "@/components/Title";
 
 import apiService from "@/services/apiService";
 
-import { FilterParams, Product } from "@/models";
-import { generateUniqueKey } from "@/utils/generateUniqueKey";
-import { notNull } from "@/utils/notNull";
+import { notNull } from "@/utils";
 
-const pageSizeOptions = [5, 10, 20, 50];
-const defaultPageSize = 50;
-const defaultPageNumber = 1;
+import { FilterParams, Product } from "@/models";
+
+const productListDescription = {
+  list: "Product list",
+  filters: "Filters",
+  products: "Products",
+  notExist: "Not exist",
+};
+
+const page = {
+  pageSizeOptions: [5, 10, 20, 50],
+  defaultPageSize: 50,
+  defaultPageNumber: 1,
+};
 
 interface ProductState {
   products: Product[];
@@ -21,8 +32,6 @@ interface ProductState {
   pageSize: number;
   pageNumber: number;
   isLoading: boolean;
-  errorId: string | null;
-  errorCount: number;
 }
 
 interface FilterState {
@@ -30,19 +39,18 @@ interface FilterState {
   selectedField: string | null;
   filterValues: string[];
   selectedValue: string | null;
-  errorId: string | null;
-  errorCount: number;
+  loadingValues: boolean;
+  loadingFields: boolean;
+  isApplyingFilter: boolean;
 }
 
 const ProductList = () => {
   const [productState, setProductState] = useState<ProductState>({
     products: [],
     total: 0,
-    pageSize: defaultPageSize,
-    pageNumber: defaultPageNumber,
-    isLoading: true,
-    errorId: null,
-    errorCount: 0,
+    pageSize: page.defaultPageSize,
+    pageNumber: page.defaultPageNumber,
+    isLoading: false,
   });
 
   const [filterState, setFilterState] = useState<FilterState>({
@@ -50,91 +58,59 @@ const ProductList = () => {
     selectedField: null,
     filterValues: [],
     selectedValue: null,
-    errorId: null,
-    errorCount: 0,
+    loadingValues: false,
+    loadingFields: false,
+    isApplyingFilter: false,
   });
 
-  const [loadingValues, setLoadingValues] = useState(false);
-  const [isApplyingFilter, setIsApplyingFilter] = useState(false);
-
-  const handlePageChange = useCallback((currentPageNumber: number, currentPageSize: number) => {
-    setProductState((prevState) => ({
-      ...prevState,
-      pageNumber: currentPageNumber,
-      pageSize: currentPageSize,
-    }));
-  }, []);
-
-  const handlePageSizeChange = useCallback((currentPageSize: number) => {
-    setProductState((prevState) => ({ ...prevState, pageSize: currentPageSize, pageNumber: 1 }));
-  }, []);
-
-  const fetchProducts = useCallback(() => {
+  const fetchProducts = () => {
     setProductState((prevState) => ({ ...prevState, isLoading: true }));
-    const offset = (productState.pageNumber - 1) * productState.pageSize;
+    const offset = productState.pageNumber * productState.pageSize!;
 
-    apiService
-      .getIds()
-      .then((totalItems) => {
-        return apiService
-          .getIds(offset, productState.pageSize)
-          .then((ids) => apiService.getItems(ids))
-          .then((items) => {
-            const uniqueItems = Array.from(new Set(items.map((item) => item.id)))
-              .map((id) => items.find((item) => item.id === id))
-              .filter((item) => item !== undefined) as Product[];
+    apiService.getIds().then(() => {
+      apiService
+        .getIds(offset, productState.pageSize)
+        .then((ids) => apiService.getItems(ids))
+        .then((items) => {
+          // фильтрация и преобразование полученных элементов в массив уникальных элементов по id
+          const uniqueItems = Array.from(new Set(items.map((item) => item.id)))
+            .map((id) => items.find((item) => item.id === id))
+            .filter((item) => item !== undefined) as Product[];
 
-            setProductState((prevState) => ({
-              ...prevState,
-              products: uniqueItems,
-              total: totalItems.length,
-              isLoading: false,
-            }));
-          });
-      })
-      .catch(() => {
-        const errorId = generateUniqueKey();
-        setProductState((prevState) => ({
-          ...prevState,
-          errorId: errorId,
-          errorCount: prevState.errorCount + 1,
-        }));
-      });
-  }, [productState.pageNumber, productState.pageSize]);
+          setProductState((prevState) => ({
+            ...prevState,
+            products: uniqueItems,
+            total: uniqueItems.length,
+            isLoading: false,
+          }));
+        });
+    });
+  };
 
-  useEffect(() => {
-    if (productState.errorId && productState.errorCount < 5) {
-      console.error(productState.errorId);
-      const timeoutId = setTimeout(() => {
-        fetchProducts();
-      }, 2000);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [productState.errorId, productState.errorCount, fetchProducts]);
-
+  // получение списка товаров и доступных полей для фильтрации
   useEffect(() => {
     fetchProducts();
-  }, [fetchProducts, productState.pageNumber, productState.pageSize]);
+    setFilterState((prevState) => ({ ...prevState, loadingFields: true }));
 
-  const handleFieldChange = (value: string) => {
-    setFilterState((prevState) => ({ ...prevState, selectedField: value }));
-  };
+    apiService.getFields().then((fetchedFields) => {
+      setFilterState((prevState) => ({
+        ...prevState,
+        fields: fetchedFields,
+      }));
 
-  const handleValueChange = (value: string) => {
-    setFilterState((prevState) => ({ ...prevState, selectedValue: value }));
-  };
+      setFilterState((prevState) => ({ ...prevState, loadingFields: false }));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  // получение списка значений для фильтрации исходя из введенных полей
   useEffect(() => {
     if (filterState.selectedField) {
-      setLoadingValues(true);
-      const offset = (productState.pageNumber - 1) * productState.pageSize;
+      setFilterState((prevState) => ({ ...prevState, loadingValues: true }));
 
       apiService
         .getFields({
           field: filterState.selectedField,
-          offset: offset,
-          limit: productState.pageSize,
         })
         .then((values) => {
           const nonNullValues = values.filter(notNull);
@@ -146,18 +122,20 @@ const ProductList = () => {
           const uniqueValues = [...new Set(nonNullValues)];
 
           setFilterState((prevState) => ({ ...prevState, filterValues: uniqueValues }));
-          setLoadingValues(false);
         });
     }
-  }, [productState.pageNumber, productState.pageSize, filterState.selectedField]);
 
-  const applyFilter = useCallback(() => {
-    if (isApplyingFilter) return;
+    setFilterState((prevState) => ({ ...prevState, loadingValues: false }));
+  }, [filterState.selectedField]);
 
-    setIsApplyingFilter(true);
-    setProductState((prevState) => ({ ...prevState, isLoading: true }));
-
+  const applyFilter = () => {
+    // фильтр не применяется если не был применен фильтр и
+    // не было выбрано поле или значение для фильтрации
+    if (filterState.isApplyingFilter) return;
     if (!filterState.selectedField || !filterState.selectedValue) return;
+
+    setFilterState((prevState) => ({ ...prevState, isApplyingFilter: true }));
+    setProductState((prevState) => ({ ...prevState, isLoading: true }));
 
     const params: FilterParams = {
       [filterState.selectedField]: filterState.selectedValue,
@@ -178,11 +156,11 @@ const ProductList = () => {
             total: uniqueItems.length,
             isLoading: false,
           }));
-          setIsApplyingFilter(false);
+          setFilterState((prevState) => ({ ...prevState, isApplyingFilter: false }));
           return;
         }
 
-        // Проверяем вхождение строки для поля "product"
+        // Проверка вхождения строки для поля "product"
         const regex = new RegExp(`^${filterState.selectedValue || ""}$`, "ig");
         const testedProducts = uniqueItems.filter((product) => regex.test(product.product || ""));
 
@@ -193,86 +171,62 @@ const ProductList = () => {
           isLoading: false,
         }));
 
-        setIsApplyingFilter(false);
-      })
-      .catch(() => {
-        const errorId = generateUniqueKey();
-        setFilterState((prevState) => ({
-          ...prevState,
-          errorId: errorId,
-          errorCount: prevState.errorCount + 1,
-        }));
-        setProductState((prevState) => ({ ...prevState, isLoading: false }));
-        setIsApplyingFilter(false);
+        setFilterState((prevState) => ({ ...prevState, isApplyingFilter: false }));
       });
-  }, [filterState.selectedField, filterState.selectedValue, isApplyingFilter]);
+  };
 
-  useEffect(() => {
-    if (filterState.errorId && filterState.errorCount < 5) {
-      console.error(filterState.errorId);
-      const timeoutId = setTimeout(() => {
-        applyFilter();
-      }, 2000);
+  const handleFieldChange = (value: string) => {
+    setFilterState((prevState) => ({
+      ...prevState,
+      selectedField: value,
+      selectedValue: null,
+      isLoading: false,
+    }));
+  };
 
-      return () => clearTimeout(timeoutId);
-    }
-  }, [filterState.errorId, filterState.errorCount, applyFilter]);
+  const handleValueChange = (value: string) => {
+    setFilterState((prevState) => ({ ...prevState, selectedValue: value, isLoading: false }));
+  };
 
-  useEffect(() => {
-    apiService.getFields().then((fetchedFields) => {
-      setFilterState((prevState) => ({
-        ...prevState,
-        fields: fetchedFields,
-      }));
-    });
-  }, []);
+  const handlePageChange = (currentPageNumber: number, currentPageSize: number) => {
+    setProductState((prevState) => ({
+      ...prevState,
+      pageNumber: currentPageNumber,
+      pageSize: currentPageSize,
+      isLoading: false,
+    }));
+  };
+
+  const handlePageSizeChange = (currentPageSize: number) => {
+    setProductState((prevState) => ({
+      ...prevState,
+      pageSize: currentPageSize,
+      isLoading: false,
+    }));
+  };
 
   return (
-    <Container title="Список товаров">
-      <Typography.Title level={3} style={{ textAlign: "left" }}>
-        Фильтры
-      </Typography.Title>
+    <Container title={productListDescription.list}>
+      <Title value={productListDescription.filters} />
 
       <Divider />
 
-      <Space>
-        <Select
-          placeholder="Выберите поле"
-          onChange={handleFieldChange}
-          popupMatchSelectWidth={false}
-          disabled={isApplyingFilter || isApplyingFilter}>
-          {filterState.fields.map((field) => (
-            <Select.Option key={generateUniqueKey()} value={field}>
-              {field}
-            </Select.Option>
-          ))}
-        </Select>
-
-        <Select
-          placeholder="Выберите значение"
-          onChange={handleValueChange}
-          disabled={!filterState.selectedField || isApplyingFilter}
-          popupMatchSelectWidth={false}
-          loading={loadingValues}>
-          {filterState.filterValues.map((value) => (
-            <Select.Option key={generateUniqueKey()} value={value}>
-              {value}
-            </Select.Option>
-          ))}
-        </Select>
-
-        <Button
-          onClick={applyFilter}
-          disabled={!filterState.selectedField || !filterState.selectedValue || isApplyingFilter}>
-          Применить
-        </Button>
-      </Space>
+      <Filters
+        fields={filterState.fields}
+        selectedField={filterState.selectedField}
+        filterValues={filterState.filterValues}
+        selectedValue={filterState.selectedValue}
+        onFieldChange={handleFieldChange}
+        onValueChange={handleValueChange}
+        onApplyFilter={applyFilter}
+        loadingValues={filterState.loadingValues}
+        loadingFields={filterState.loadingFields}
+        isApplyingFilter={filterState.isApplyingFilter}
+      />
 
       <Divider />
 
-      <Typography.Title level={3} style={{ textAlign: "left" }}>
-        Товары
-      </Typography.Title>
+      <Title value={productListDescription.products} />
 
       <Divider />
 
@@ -282,11 +236,24 @@ const ProductList = () => {
             <Skeleton active />
           </Col>
         ) : (
-          productState.products.map((product) => (
-            <Col key={product.id} xs={24} sm={12} md={8} lg={6}>
-              <ProductCard product={product} />
-            </Col>
-          ))
+          <>
+            {productState.products.length > 0 && !productState.isLoading ? (
+              productState.products
+                .slice(
+                  (productState.pageNumber - 1) * productState.pageSize,
+                  productState.pageNumber * productState.pageSize,
+                )
+                .map((product) => (
+                  <Col key={product.id} xs={24} sm={12} md={8} lg={6}>
+                    <ProductCard product={product} />
+                  </Col>
+                ))
+            ) : (
+              <Col span={24}>
+                <Empty description={productListDescription.notExist} />
+              </Col>
+            )}
+          </>
         )}
       </Row>
 
@@ -296,11 +263,11 @@ const ProductList = () => {
         <Pagination
           showSizeChanger
           current={productState.pageNumber || 1}
-          total={productState.total || 0}
-          pageSize={productState.pageSize || 5}
+          total={productState.total}
+          pageSize={productState.pageSize}
           onChange={handlePageChange}
           onShowSizeChange={handlePageSizeChange}
-          pageSizeOptions={pageSizeOptions.map(Number)}
+          pageSizeOptions={page.pageSizeOptions.map(Number)}
         />
       </div>
     </Container>
