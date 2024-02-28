@@ -15,4 +15,9 @@ export default defineConfig({
   resolve: {
     alias: aliases,
   },
+  build: {
+    rollupOptions: {
+      external: ["src/resources/**"],
+    },
+  },
 });
