@@ -20,4 +20,5 @@ export default defineConfig({
       external: ["src/resources/**"],
     },
   },
+  base: "/product-list/",
 });
