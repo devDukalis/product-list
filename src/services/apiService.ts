@@ -5,7 +5,7 @@ import { generateUniqueKey } from "@/utils";
 
 import { ApiResponse, FieldParams, FilterParams, Product } from "@/models";
 
-const BASE_URL = "http://api.valantis.store:40000/";
+const BASE_URL = "https://api.valantis.store:41000/";
 const PASSWORD = "Valantis";
 const MAX_RETRIES = 2;
 
