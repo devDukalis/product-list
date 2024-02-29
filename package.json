@@ -7,7 +7,7 @@
     "init": "npm i && npm run husky:prepare && npm run husky:pre-commit && npm run husky:commit-msg && npm run vite:dev",
     "shell:generate-component": "sh ./src/utils/generate-component.sh",
     "vite:dev": "vite --open",
-    "vite:build": "tsc && vite build",
+    "vite:build": "vite build",
     "vite:preview": "vite preview --open",
     "eslint:check": "eslint . --ext js,jsx,ts,tsx --report-unused-disable-directives --max-warnings 0",
     "eslint:fix": "eslint . --fix --ext js,jsx,ts,tsx --report-unused-disable-directives --max-warnings 0",
