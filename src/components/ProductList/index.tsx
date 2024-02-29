@@ -135,7 +135,7 @@ const ProductList = () => {
     if (!filterState.selectedField || !filterState.selectedValue) return;
 
     setFilterState((prevState) => ({ ...prevState, isApplyingFilter: true }));
-    setProductState((prevState) => ({ ...prevState, isLoading: true }));
+    setProductState((prevState) => ({ ...prevState, isLoading: true, pageNumber: 1 }));
 
     const params: FilterParams = {
       [filterState.selectedField]: filterState.selectedValue,
