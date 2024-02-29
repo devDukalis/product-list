@@ -16,9 +16,7 @@
     "husky:prepare": "husky install",
     "husky:pre-commit": "npx husky add .husky/pre-commit \"npx lint-staged --concurrent false --relative\"",
     "husky:commit-msg": "npx husky add .husky/commit-msg \"npx commitlint --edit $1\"",
-    "lint-staged:run": "lint-staged",
-    "predeploy": "npm run vite:build",
-    "deploy": "gh-pages -d dist"
+    "lint-staged:run": "lint-staged"
   },
   "dependencies": {
     "antd": "^5.14.2",
@@ -46,7 +44,6 @@
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
-    "gh-pages": "^6.1.1",
     "husky": "^8.0.3",
     "lint-staged": "^15.0.2",
     "prettier": "^3.0.3",
