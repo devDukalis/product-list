@@ -17,7 +17,7 @@ const productListDescription = {
   list: "Product list",
   filters: "Filters",
   products: "Products",
-  notExist: "Not exist",
+  noData: "No data",
 };
 
 const page = {
@@ -34,11 +34,11 @@ interface ProductState {
   isLoading: boolean;
 }
 
-interface FilterState {
+export interface FilterState {
   fields: string[];
   selectedField: string | null;
-  filterValues: string[];
-  selectedValue: string | null;
+  filterValues: string[] | number[];
+  selectedValue: string | number | null;
   loadingValues: boolean;
   loadingFields: boolean;
   isApplyingFilter: boolean;
@@ -212,16 +212,11 @@ const ProductList = () => {
       <Divider />
 
       <Filters
-        fields={filterState.fields}
-        selectedField={filterState.selectedField}
-        filterValues={filterState.filterValues}
-        selectedValue={filterState.selectedValue}
+        state={filterState}
         onFieldChange={handleFieldChange}
         onValueChange={handleValueChange}
         onApplyFilter={applyFilter}
-        loadingValues={filterState.loadingValues}
-        loadingFields={filterState.loadingFields}
-        isApplyingFilter={filterState.isApplyingFilter}
+        setFilterState={setFilterState}
       />
 
       <Divider />
@@ -250,7 +245,7 @@ const ProductList = () => {
                 ))
             ) : (
               <Col span={24}>
-                <Empty description={productListDescription.notExist} />
+                <Empty description={productListDescription.noData} />
               </Col>
             )}
           </>

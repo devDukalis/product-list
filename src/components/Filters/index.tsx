@@ -1,32 +1,96 @@
-import { Select, Button, Space } from "antd";
+import { Dispatch, useCallback, useEffect, useRef, useState } from "react";
+
+import { Select, Button, Space, Slider, InputNumber } from "antd";
+
+import { FilterState } from "@/components/ProductList";
 
 import { generateUniqueKey } from "@/utils";
 
+const sliderState = {
+  min: 1,
+  max: 10000000,
+  value: 100,
+};
+
+const inputState = {
+  min: 1,
+  max: 10000000,
+  value: 100,
+};
+
 interface Props {
-  fields: string[];
-  selectedField: string | null;
-  filterValues: string[];
-  selectedValue: string | null;
   onFieldChange: (value: string) => void;
   onValueChange: (value: string) => void;
   onApplyFilter: () => void;
-  loadingValues: boolean;
-  loadingFields: boolean;
-  isApplyingFilter: boolean;
+  state: FilterState;
+  setFilterState: Dispatch<React.SetStateAction<FilterState>>;
 }
 
 const Filters: React.FC<Props> = ({
-  fields,
-  selectedField,
-  filterValues,
-  selectedValue,
+  state,
   onFieldChange,
   onValueChange,
   onApplyFilter,
-  loadingValues,
-  loadingFields,
-  isApplyingFilter,
+  setFilterState,
 }) => {
+  const {
+    fields,
+    selectedField,
+    filterValues,
+    selectedValue,
+    loadingValues,
+    loadingFields,
+    isApplyingFilter,
+  } = state;
+  const [slider, setSlider] = useState(sliderState);
+  const [input, setInput] = useState(inputState);
+  const inputNumberRef = useRef<HTMLInputElement>(null);
+
+  const isSelectedFieldPrice = selectedField === "price";
+
+  const handleSliderChange = (value: number) => {
+    setSlider((prevState) => ({ ...prevState, value }));
+    setInput((prevState) => ({ ...prevState, value }));
+    setFilterState((prevState) => ({ ...prevState, selectedValue: value }));
+  };
+
+  const handleInputChange = (value: number | null) => {
+    if (value === null) {
+      return;
+    }
+    setSlider((prevState) => ({ ...prevState, value }));
+    setInput((prevState) => ({ ...prevState, value }));
+    setFilterState((prevState) => ({ ...prevState, selectedValue: value }));
+  };
+
+  const handleInputClick = () => {
+    if (inputNumberRef.current) {
+      inputNumberRef.current.select();
+    }
+  };
+
+  const updateSliderAndInput = useCallback(() => {
+    const prices = filterValues.filter((item): item is number => typeof item === "number");
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+
+    if (input.value < minPrice) {
+      setInput({ ...input, value: minPrice });
+    } else if (input.value > maxPrice) {
+      setInput({ ...input, value: maxPrice });
+    }
+
+    setSlider({ min: minPrice, max: maxPrice, value: minPrice });
+    setInput({ min: minPrice, max: maxPrice, value: minPrice });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterValues, isSelectedFieldPrice]);
+
+  useEffect(() => {
+    if (isSelectedFieldPrice && filterValues.length > 0) {
+      updateSliderAndInput();
+    }
+  }, [filterValues.length, isSelectedFieldPrice, updateSliderAndInput]);
+
   return (
     <Space>
       <Select
@@ -43,19 +107,41 @@ const Filters: React.FC<Props> = ({
         ))}
       </Select>
 
-      <Select
-        placeholder="select value"
-        value={selectedValue}
-        onChange={onValueChange}
-        disabled={!selectedField || isApplyingFilter}
-        popupMatchSelectWidth={false}
-        loading={loadingValues}>
-        {filterValues.map((value) => (
-          <Select.Option key={value} value={value}>
-            {value}
-          </Select.Option>
-        ))}
-      </Select>
+      {isSelectedFieldPrice ? (
+        <>
+          <Slider
+            min={slider.min}
+            max={slider.max}
+            value={slider.value}
+            onChange={handleSliderChange}
+            style={{ width: "200px" }}
+          />
+          <InputNumber
+            min={input.min}
+            max={input.max}
+            value={input.value}
+            onChange={handleInputChange}
+            onPressEnter={onApplyFilter}
+            onClick={handleInputClick}
+            ref={inputNumberRef}
+            addonAfter="₽"
+          />
+        </>
+      ) : (
+        <Select
+          placeholder="select value"
+          value={selectedValue?.toString()}
+          onChange={onValueChange}
+          disabled={!selectedField || isApplyingFilter}
+          popupMatchSelectWidth={false}
+          loading={loadingValues}>
+          {filterValues.map((value) => (
+            <Select.Option key={value} value={value}>
+              {value}
+            </Select.Option>
+          ))}
+        </Select>
+      )}
 
       <Button
         onClick={onApplyFilter}
